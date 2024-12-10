@@ -18,3 +18,5 @@ public class UDPDATA
         return mAppControlField.GetToString() + mAppWhoField.GetToString() + mAppDataField.GetToString();
     }
 }
+
+
