@@ -143,34 +143,25 @@ public class UDPSendTest : MonoBehaviour
     }
     void CalcularRotacion()
     {
-        // Establece la rotación en el eje Y (horizontal), ignorando X y Z.
-        Quaternion rotY = vehicle.rotation;
-        rotY.x = 0;
-        rotY.z = 0;
+        Quaternion currentRotation = vehicle.rotation;
+        Vector3 eulerAngles = currentRotation.eulerAngles;
 
-        // Define una distancia para las posiciones futuras.
-        float longg = 5.0f;  // Puedes ajustar este valor según el tamaño del movimiento simulado.
+        float servoPitch = Mathf.Clamp(eulerAngles.x, 0, 180);
+        float servoYaw = Mathf.Clamp(eulerAngles.y, 0, 180);
+        float servoRoll = Mathf.Clamp(eulerAngles.z, 0, 180);
 
-        // Calcula las posiciones simuladas en cada dirección.
-        Vector3 Vb1 = vehicle.position + vehicle.rotation * Vector3.right * longg;   // Derecha
-        Vector3 Vb2 = vehicle.position + rotY * Vector3.right * longg;               // Derecha solo con rotación Y
+        string hexPitch = DecToHexMove(servoPitch);
+        string hexYaw = DecToHexMove(servoYaw);
+        string hexRoll = DecToHexMove(servoRoll);
 
-        Vector3 VbA1 = vehicle.position + vehicle.rotation * Vector3.forward * longg; // Adelante
-        Vector3 VbA2 = vehicle.position + rotY * Vector3.forward * longg;             // Adelante solo con rotación Y
+        Debug.Log($"Servo Pitch (Hex): {hexPitch}, Servo Yaw (Hex): {hexYaw}, Servo Roll (Hex): {hexRoll}");
 
-        // Simula el movimiento vertical (ascenso y descenso) del helicóptero
-        Vector3 upMovement = vehicle.position + Vector3.up * Mathf.Sin(Time.time) * 2f;  // Movimiento de ascenso-descenso
+        mUDPDATA.mAppDataField.PlayMotorA = hexPitch;
+        mUDPDATA.mAppDataField.PlayMotorB = hexYaw;
+        mUDPDATA.mAppDataField.PlayMotorC = hexRoll;
 
-        // Aplica rotación suavizada para simular estabilidad del helicóptero.
-        vehicle.rotation = Quaternion.Slerp(vehicle.rotation, Quaternion.Euler(A, B, C), Time.deltaTime);
+        sendString(mUDPDATA.GetToString());
 
-        // Visualización de Gizmos para depuración
-        Debug.DrawLine(vehicle.position, Vb1, Color.red);
-        Debug.DrawLine(vehicle.position, VbA1, Color.green);
-        Debug.DrawLine(vehicle.position, upMovement, Color.blue);
-
-        // Actualiza la posición real (opcional)
-        vehicle.position = upMovement;
     }
 
 

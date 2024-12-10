@@ -2,45 +2,103 @@ using UnityEngine;
 
 public class HelicopterController : MonoBehaviour
 {
-    public float moveSpeed = 10f; // Velocidad de movimiento horizontal
-    public float ascendSpeed = 5f; // Velocidad de ascenso y descenso
-    public float rotationSpeed = 2f; // Velocidad de rotación para inclinación
+    [Header("Helicopter Settings")]
+    [Tooltip("Speed at which the helicopter moves up and down.")]
+    public float liftSpeed = 5f;
 
-    private float horizontalInput;
-    private float verticalInput;
-    private float ascendInput;
+    [Tooltip("Speed at which the helicopter moves horizontally.")]
+    public float moveSpeed = 10f;
 
-    void Update()
+    [Tooltip("Maximum height the helicopter can reach.")]
+    public float maxHeight = 50f;
+
+    [Tooltip("Minimum height the helicopter can reach.")]
+    public float minHeight = 0f;
+
+    [Tooltip("Smooth rotation speed for tilting effects.")]
+    public float tiltSpeed = 2f;
+
+    [Header("Input Keys")]
+    [Tooltip("Input key to ascend.")]
+    public KeyCode ascendKey = KeyCode.W;
+
+    [Tooltip("Input key to descend.")]
+    public KeyCode descendKey = KeyCode.S;
+
+    private Rigidbody rb;
+
+    private Quaternion fixedRotation;
+
+    void Start()
     {
-        // Inputs para movimiento horizontal
-        horizontalInput = Input.GetAxis("Horizontal"); // A y D
-        verticalInput = Input.GetAxis("Vertical"); // W y S
+        // Get the Rigidbody component
+        rb = GetComponent<Rigidbody>();
+        if (rb == null)
+        {
+            Debug.LogError("No Rigidbody found! Please attach a Rigidbody to the helicopter.");
+        }
 
-        // Input para ascenso/descenso
-        if (Input.GetKey(KeyCode.UpArrow))
+        // Store the fixed rotation with X set to 270
+        fixedRotation = Quaternion.Euler(270f, transform.eulerAngles.y, transform.eulerAngles.z);
+    }
+
+    void FixedUpdate()
+    {
+        HandleVerticalMovement();
+        HandleHorizontalMovement();
+        HandleTilting();
+    }
+
+    void LateUpdate()
+    {
+        // Ensure the rotation on the X axis is always 270 degrees
+        transform.rotation = Quaternion.Euler(270f, transform.eulerAngles.y, transform.eulerAngles.z);
+    }
+
+    void HandleVerticalMovement()
+    {
+        // Get current position
+        Vector3 currentPosition = transform.position;
+
+        // Ascend
+        if (Input.GetKey(ascendKey) && currentPosition.y < maxHeight)
         {
-            ascendInput = 1;
+            rb.velocity = new Vector3(rb.velocity.x, liftSpeed, rb.velocity.z);
         }
-        else if (Input.GetKey(KeyCode.DownArrow))
+        // Descend
+        else if (Input.GetKey(descendKey) && currentPosition.y > minHeight)
         {
-            ascendInput = -1;
+            rb.velocity = new Vector3(rb.velocity.x, -liftSpeed, rb.velocity.z);
         }
+        // Stabilize vertical velocity if no input
         else
         {
-            ascendInput = 0;
+            rb.velocity = new Vector3(rb.velocity.x, 0, rb.velocity.z);
         }
+    }
 
-        // Movimiento horizontal (adelante, atrás, izquierda, derecha)
-        Vector3 moveDirection = new Vector3(horizontalInput, 0, verticalInput) * moveSpeed * Time.deltaTime;
-        transform.Translate(moveDirection, Space.Self);
+    void HandleHorizontalMovement()
+    {
+        // Get horizontal inputs (arrow keys or WASD)
+        float horizontalInput = Input.GetAxis("Horizontal"); // A/D or Left/Right arrows
+        float verticalInput = Input.GetAxis("Vertical");   // W/S or Up/Down arrows
 
-        // Movimiento vertical (ascender/descender)
-        transform.Translate(Vector3.up * ascendInput * ascendSpeed * Time.deltaTime, Space.World);
+        // Calculate movement direction
+        Vector3 movement = new Vector3(horizontalInput, 0, verticalInput) * moveSpeed * Time.deltaTime;
 
-        // Inclinación del helicóptero
-        float tiltAngleX = verticalInput * rotationSpeed; // Inclinación adelante/atrás
-        float tiltAngleZ = -horizontalInput * rotationSpeed; // Inclinación izquierda/derecha
-        Quaternion targetRotation = Quaternion.Euler(tiltAngleX, transform.eulerAngles.y, tiltAngleZ);
-        transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * rotationSpeed);
+        // Apply the movement
+        rb.MovePosition(transform.position + transform.TransformDirection(movement));
+    }
+
+    void HandleTilting()
+    {
+        // Calculate tilt based on input
+        float tiltZ = Input.GetAxis("Horizontal") * 10f; // Left/Right tilt
+        float tiltY = Input.GetAxis("Vertical") * -10f;  // Forward/Backward tilt
+
+        // Smoothly interpolate to the target tilt while keeping the fixed rotation
+        Quaternion targetRotation = Quaternion.Euler(270f, transform.eulerAngles.y + tiltY, tiltZ);
+        transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, Time.deltaTime * tiltSpeed);
     }
 }
+
