@@ -143,27 +143,37 @@ public class UDPSendTest : MonoBehaviour
     }
     void CalcularRotacion()
     {
+        // Obtener la rotación actual del objeto como ángulos de Euler
         Quaternion currentRotation = vehicle.rotation;
         Vector3 eulerAngles = currentRotation.eulerAngles;
 
-        float servoPitch = Mathf.Clamp(eulerAngles.x, 0, 180);
-        float servoYaw = Mathf.Clamp(eulerAngles.y, 0, 180);
-        float servoRoll = Mathf.Clamp(eulerAngles.z, 0, 180);
+        // Mapear los ángulos de Euler al rango de 0 a 200, con 100 como punto medio
+        float servoPitch = MapToRange(eulerAngles.x, -180, 180, 0, 200);
+        float servoYaw = MapToRange(eulerAngles.y, -180, 180, 0, 200);
+        float servoRoll = MapToRange(eulerAngles.z, -180, 180, 0, 200);
 
+        // Convertir los valores mapeados a hexadecimal
         string hexPitch = DecToHexMove(servoPitch);
         string hexYaw = DecToHexMove(servoYaw);
         string hexRoll = DecToHexMove(servoRoll);
 
+        // Mostrar los valores mapeados y convertidos en consola
         Debug.Log($"Servo Pitch (Hex): {hexPitch}, Servo Yaw (Hex): {hexYaw}, Servo Roll (Hex): {hexRoll}");
 
+        // Asignar los valores a los campos correspondientes para envío
         mUDPDATA.mAppDataField.PlayMotorA = hexPitch;
         mUDPDATA.mAppDataField.PlayMotorB = hexYaw;
         mUDPDATA.mAppDataField.PlayMotorC = hexRoll;
 
+        // Enviar los datos
         sendString(mUDPDATA.GetToString());
-
     }
 
+    // Función auxiliar para mapear valores de un rango a otro
+    float MapToRange(float value, float fromMin, float fromMax, float toMin, float toMax)
+    {
+        return Mathf.Clamp((value - fromMin) / (fromMax - fromMin) * (toMax - toMin) + toMin, toMin, toMax);
+    }
 
     void FixedUpdate()
     {
