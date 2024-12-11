@@ -137,38 +137,19 @@ public class UDPManager : MonoBehaviour
         // Obtenemos la rotación del vehículo (en grados)
         Vector3 rotation = vehicle.transform.eulerAngles;
 
-        // Normalizamos las rotaciones para que estén entre [-180, 180]
-        rotation.x = NormalizeAngle(rotation.x);
-        rotation.z = NormalizeAngle(rotation.z);
+        // Normalizamos los ángulos en el rango [-180, 180]
+        rotation.x = (rotation.x + 180) % 360 - 180;
+        rotation.z = (rotation.z + 180) % 360 - 180;
 
-        // Calcular A usando la rotación en el eje X
+        // Calculamos A usando la rotación en X
         A = Mathf.Clamp(100 + rotation.x, 0, 200);
 
-        // Calcular B y C usando la rotación en el eje Z
+        // Calculamos B y C usando la rotación en Z
         B = Mathf.Clamp(100 - rotation.z, 0, 200);
         C = Mathf.Clamp(100 + rotation.z, 0, 200);
 
-        // Ajustar B y C según A para que sigan la misma tendencia
-        AdjustBCBasedOnA();
-    }
-
-    private float NormalizeAngle(float angle)
-    {
-        // Ajuste para garantizar que el ángulo esté en el rango [-180, 180]
-        if (angle > 180)
-            angle -= 360;
-        else if (angle < -180)
-            angle += 360;
-
-        return angle;
-    }
-
-    private void AdjustBCBasedOnA()
-    {
-        // Calculamos la diferencia entre A y 100 (el valor base)
-        float adjustment = A - 100;
-
-        // Modificamos B y C en función de la diferencia de A
+        // Ajustamos B y C según A para mantener la misma tendencia
+        float adjustment = A - 100; // Calculamos la diferencia con 100
         B = Mathf.Clamp(B - adjustment, 0, 200);
         C = Mathf.Clamp(C - adjustment, 0, 200);
     }
