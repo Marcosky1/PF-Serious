@@ -6,6 +6,7 @@ using System.Net.Sockets;
 using UnityEngine;
 using UnityEngine.UI;
 using Slider = UnityEngine.UI.Slider;
+using TMPro;
 
 public class UDPManager : MonoBehaviour
 {
@@ -15,14 +16,14 @@ public class UDPManager : MonoBehaviour
 
     private string IP;  // define in init
     public int port;  // define in init
-    public Text engineA;
-    public Text engineAHex;
+    public TextMeshProUGUI engineA;
+    public TextMeshProUGUI engineAHex;
     public Slider sliderA;
-    public Text engineB;
-    public Text engineBHex;
+    public TextMeshProUGUI engineB;
+    public TextMeshProUGUI engineBHex;
     public Slider sliderB;
-    public Text engineC;
-    public Text engineCHex;
+    public TextMeshProUGUI engineC;
+    public TextMeshProUGUI engineCHex;
     public Slider sliderC;
 
     public Text Data;
@@ -131,71 +132,45 @@ public class UDPManager : MonoBehaviour
         active = true;
     }
 
-    void CalcularRotacion()
+    private void CalcularRotacion()
     {
-        //Debug.Log("euler "+vehicle.eulerAngles );
+        // Obtenemos la rotación del vehículo (en grados)
+        Vector3 rotation = vehicle.transform.eulerAngles;
 
-        if (vehicle.eulerAngles.z > 0.1 && vehicle.eulerAngles.z < 180)
-        {
-            B = Mathf.Lerp(B, 200, Time.deltaTime * SmoothEngine);
-            C = Mathf.Lerp(C, 0, Time.deltaTime * SmoothEngine);
-        }
-        else if (vehicle.eulerAngles.z >= 180 && vehicle.eulerAngles.z <= 360)
-        {
-            B = Mathf.Lerp(B, 0, Time.deltaTime * SmoothEngine);
-            C = Mathf.Lerp(C, 200, Time.deltaTime * SmoothEngine);
-        }
-        else
-        {
-            B = Mathf.Lerp(B, 100, Time.deltaTime * SmoothEngine);
-            C = Mathf.Lerp(C, 100, Time.deltaTime * SmoothEngine);
-        }
+        // Normalizamos las rotaciones para que estén entre [-180, 180]
+        rotation.x = NormalizeAngle(rotation.x);
+        rotation.z = NormalizeAngle(rotation.z);
 
-        if (vehicle.eulerAngles.x > 2 && vehicle.eulerAngles.x < 180)
-        {
-            A = Mathf.Lerp(A, 200, Time.deltaTime * SmoothEngine);
-            B = Mathf.Lerp(B, 0, Time.deltaTime * SmoothEngine);
-            C = Mathf.Lerp(B, 0, Time.deltaTime * SmoothEngine);
-        }
-        else if (vehicle.eulerAngles.x >= 180 && vehicle.eulerAngles.x <= 360)
-        {
-            A = Mathf.Lerp(A, 0, Time.deltaTime * SmoothEngine);
-            B = Mathf.Lerp(B, 200, Time.deltaTime * SmoothEngine);
-            C = Mathf.Lerp(B, 200, Time.deltaTime * SmoothEngine);
-        }
-        else
-        {
-            A = Mathf.Lerp(A, 100, Time.deltaTime * SmoothEngine);
-            B = Mathf.Lerp(B, 100, Time.deltaTime * SmoothEngine);
-            C = Mathf.Lerp(B, 100, Time.deltaTime * SmoothEngine);
-        }
+        // Calcular A usando la rotación en el eje X
+        A = Mathf.Clamp(100 + rotation.x, 0, 200);
 
-        //A = CalcularA();
-        //B = CalcularB();
-        //C = CalcularC();
+        // Calcular B y C usando la rotación en el eje Z
+        B = Mathf.Clamp(100 - rotation.z, 0, 200);
+        C = Mathf.Clamp(100 + rotation.z, 0, 200);
 
-        // Convertir los valores A, B, y C a hexadecimal
-        string hexA = DecToHexMove(A);
-        string hexB = DecToHexMove(B);
-        string hexC = DecToHexMove(C);
+        // Ajustar B y C según A para que sigan la misma tendencia
+        AdjustBCBasedOnA();
+    }
 
-        // Actualizar el UI o el inspector si es necesario (puedes hacerlo aquí)
-        engineA.text = "A: " + ((int)A).ToString();
-        engineB.text = "B: " + ((int)B).ToString();
-        engineC.text = "C: " + ((int)C).ToString();
+    private float NormalizeAngle(float angle)
+    {
+        // Ajuste para garantizar que el ángulo esté en el rango [-180, 180]
+        if (angle > 180)
+            angle -= 360;
+        else if (angle < -180)
+            angle += 360;
 
-        // Actualizar los valores en el formato hexadecimal
-        engineAHex.text = "Engine A (Hex): " + hexA;
-        engineBHex.text = "Engine B (Hex): " + hexB;
-        engineCHex.text = "Engine C (Hex): " + hexC;
+        return angle;
+    }
 
-        // Enviar los datos a los motores (en formato hexadecimal)
-        mUDPDATA.mAppDataField.PlayMotorA = hexA;
-        mUDPDATA.mAppDataField.PlayMotorB = hexB;
-        mUDPDATA.mAppDataField.PlayMotorC = hexC;
+    private void AdjustBCBasedOnA()
+    {
+        // Calculamos la diferencia entre A y 100 (el valor base)
+        float adjustment = A - 100;
 
-        // Enviar la cadena de datos en formato hexadecimal
-        sendString(mUDPDATA.GetToString());
+        // Modificamos B y C en función de la diferencia de A
+        B = Mathf.Clamp(B - adjustment, 0, 200);
+        C = Mathf.Clamp(C - adjustment, 0, 200);
     }
 
 
@@ -223,9 +198,9 @@ public class UDPManager : MonoBehaviour
             mUDPDATA.mAppDataField.PlayMotorB = HexB;
 
 
-            engineA.text = ((int)sliderA.value).ToString();
-            engineB.text = ((int)sliderB.value).ToString();
-            engineC.text = ((int)sliderC.value).ToString();
+            engineA.text = ((int)A).ToString();
+            engineB.text = ((int)B).ToString();
+            engineC.text = ((int)C).ToString();
 
             Data.text = "Data: " + mUDPDATA.GetToString();
 
